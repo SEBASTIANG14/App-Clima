@@ -1,74 +1,140 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from "react";
+import { View, Text, TextInput, Button, StyleSheet, Image } from "react-native";
+import { WeatherPresenter } from "../presenters/WeatherPresenter";
+import { WeatherData } from "../models/WeatherModel";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const App: React.FC = () => {
+  const [city, setCity] = useState("");
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default function HomeScreen() {
+  const presenter = new WeatherPresenter({
+    showWeather: (data: WeatherData) => {
+      setWeather(data);
+      setError(null);
+    },
+    showError: (errorMessage: string) => {
+      setError(errorMessage);
+      setWeather(null);
+    },
+    showCitySuggestions: (suggestions: string[]) => {
+      console.log("City suggestions:", suggestions);
+    },
+  });
+
+  const handleSearch = () => {
+    if (city.trim() !== "") {
+      presenter.fetchWeather(city);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Consulta el Clima</Text>
+      <Text style={styles.infoText}>
+        📌 Solo algunas ciudades pueden ser consultadas. Asegúrate de escribir correctamente el nombre. Ej. London, Mexico City, New York
+      </Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Escribe una ciudad"
+        value={city}
+        onChangeText={setCity}
+      />
+      <Button title="Buscar" onPress={handleSearch} />
+
+      {weather && (
+        <View style={styles.weatherContainer}>
+          <Text style={styles.date}>{new Date().toLocaleString()}</Text>
+          <Text style={styles.city}>{weather.city}</Text>
+          <Text style={styles.description}>
+            Feels like {weather.feelsLike}°C. {weather.description}.
+          </Text>
+
+          <View style={styles.weatherDetails}>
+            <Image source={{ uri: weather.icon }} style={styles.icon} />
+            <Text style={styles.temperature}>{weather.temperature}°C</Text>
+          </View>
+
+          <View style={styles.extraInfo}>
+            <Text>💨 {weather.windSpeed}m/s {weather.windDirection}</Text>
+            <Text>🌡 {weather.pressure}hPa</Text>
+            <Text>Humidity: {weather.humidity}%</Text>
+            <Text>Dew Point: {weather.dewPoint}°C</Text>
+            <Text>Visibility: {weather.visibility}km</Text>
+          </View>
+        </View>
+      )}
+
+      {error && <Text style={styles.error}>{error}</Text>}
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#f5f5f5",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 30,
+    fontWeight: "bold",
+    marginBottom: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  infoText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  input: {
+    width: "80%",
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginBottom: 10,
+    backgroundColor: "#fff",
+  },
+  error: {
+    color: "red",
+    marginTop: 10,
+  },
+  weatherContainer: {
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+  },
+  date: {
+    fontSize: 14,
+    color: "#ff5733",
+  },
+  city: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  description: {
+    fontSize: 16,
+    fontStyle: "italic",
+  },
+  weatherDetails: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  icon: {
+    width: 50,
+    height: 50,
+  },
+  temperature: {
+    fontSize: 32,
+    fontWeight: "bold",
+  },
+  extraInfo: {
+    marginTop: 10,
   },
 });
+
+export default App;
